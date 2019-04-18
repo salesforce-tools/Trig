@@ -8,8 +8,10 @@ global without sharing class InactiveState implements ActivationState {
     private Set<SObjectType> activeHandlers = new Set<SObjectType> ();
     private Map<SObjectType, Set<String>> partialHandlers = new Map<SObjectType, Set<String>> ();
 
+    /**
+     * Constructs a new Inactive State denoting that everything in the org is turned off by default.
+     */
     global InactiveState() {
-        //pass
     }
 
     global InactiveState activateSomeActionsOn(SObjectType handledSObjectType, Set<String> activeActionNames) {
