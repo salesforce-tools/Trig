@@ -4,20 +4,22 @@
 global interface Action {
 
     /**
-     * Return a unique name for this action, to be used in activations/deactivations.  This should be
-     * unique across all Actions in an org, and should probably use a common convention, e.g.
-     * namespace.sobjecttype.actionName.
+     * Determine the nature of when the run() method will be called by setting an ActionBehavior.  This sets things like
+     * a unique name for the action, as well as anti-recursion options.
      *
-     * @return
+     * @return A new ActionBehavior that describes the behavior
      */
-    String getUniqueName();
+    ActionBehavior getBehavior();
 
     /**
-     * Runs the action - performing any DML as necessary and deferring as much DML as possible.
+     * Run the action.
      *
-     * @param context The context of the current trigger
-     * @param queriedData The results of the handler's getGlobalQueriedData call
-     * @return The set of Ids (if applicable) that should be logged as having been through this method.
+     * @param context The Trigger Context related to the current trigger.  Use this instead of Trigger.new/old/etc data.
+     * @param data A simple key/value store of any data returned in the prefetch() method on the handler; useful for
+     *  data that is common between multiple Actions such as queries or specific sets of Ids, etc.
+     *
+     * @return A RunResult object that describes the result of the action.  See RunResult documentation for more info.
+     *  This can also be null if no anti-recursion benefits are needed.
      */
-    Set<Id> run (Context context, Map<String, Object> prefetchedData);
+    RunResult run(Context context, PrefetchedData data);
 }

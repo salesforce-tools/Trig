@@ -119,7 +119,7 @@ public without sharing class ContactAddressUpdaterAction implements Trig.Action 
     *
     * @return Set of Account Ids that we don't want to see again through this process.
     */
-    public Set<Id> run(Trig.Context context, Map<String, Object> prefetchedData) {
+    public Set<Id> run(Trig.Context context, Trig.PrefetchedData prefetchedData) {
         List<Contact> contacts = (List<Contact>) prefetchedData.get('Contacts');
         for (Contact c : contacts) {
             Account acc = (Account)context.newMap.get(c.AccountId);

@@ -1,11 +1,10 @@
 /**
- * @description
+ * @description The class to call as a one-liner for Triggers.  The primary class that controls execution of handlers
+ *  and actions.
  */
 global without sharing class Dispatcher {
 
-
-    private static Map<String, Set<Id>> idHistoryMap = new Map<String, Set<Id>> ();
-    //global static Activation actions = new Activation();
+    private static Integer callDepth = 0;
 
     /**
      * Dispatch the given Handler under a given Context.  This overload is only valid for tests, as it is not
@@ -31,24 +30,50 @@ global without sharing class Dispatcher {
     }
 
     /**
-     * The private method to dispatch handlers.
+     * The internal method to dispatch handlers.
      *
      * @param handler The Trig.Handler to run.
      * @param context The Trig.Context to run under.
      */
     public static void runInternal(Handler handler, Context context) {
-        if (!Activation.isActive(handler)) {
-            System.debug('Skipping handler for ' + handler.handledSObjectType() + ' as it is inactive.');
-            return;
-        }
+        callDepth++;
         System.debug('Running handler ' + handler.handledSObjectType() + ' with context ' + context.toSummaryString());
 
-        System.debug('Running pre-trigger operations...');
-        Map<String, Object> prefetchedData = handler.prefetchData(context);
+        System.debug('Instantiating actions from handler...');
+        List<ActionBehavior> behaviors = getBehaviors(getActionsForOperation(handler, context.operation));
 
-        System.debug('Instantiating actions...');
+        if (!shouldHandlerRun(handler, behaviors)) {
+            System.debug('No active actions found.  Skipping prefetch and action execution stage.');
+            callDepth--;
+            return;
+        }
+
+        System.debug('Running pre-trigger operations...');
+        PrefetchedData data = new PrefetchedData(handler.prefetchData(context));
+
+        System.debug('Calling actions...');
+        for (ActionBehavior behavior : behaviors) {
+            behavior.runAction(handler, context, data);
+        }
+        if (callDepth == 1) {
+            System.debug('Executing deferred DML if any...');
+            Defer.executeDml();
+        }
+        callDepth--;
+    }
+
+    /**
+     * Helper for runInternal(). Given a handler on the trigger operation, call the correct list method on the handler
+     * and return its results.
+     *
+     * @param handler The handler to call
+     * @param operation The TriggerOperation to get actions for.
+     *
+     * @return The list of actions in the appropriate operation of the handler.
+     */
+    private static List<Action> getActionsForOperation(Handler handler, TriggerOperation operation) {
         List<Action> actionsToAttempt;
-        switch on context.operation {
+        switch on operation {
             when BEFORE_INSERT {
                 actionsToAttempt = handler.beforeInsert();
             }
@@ -70,44 +95,45 @@ global without sharing class Dispatcher {
             when AFTER_UNDELETE {
                 actionsToAttempt = handler.afterUndelete();
             }
-            when else {
-                throw new OperationNotSupportedException('Trigger Operation Not Supported.  Please contact the Trig developer.');
+        }
+        return actionsToAttempt == null ? new List<Action> () : actionsToAttempt;
+    }
+
+    /**
+     * Turn a list of actions into a list of ActionBehaviors using the Action.getBehavior() method.
+     *
+     * @param actions Actions that need to be turned into ActionBehaviors
+     *
+     * @return The list of Behaviors
+     */
+    public static List<ActionBehavior> getBehaviors(List<Action> actions) {
+        List<ActionBehavior> behaviors = new List<ActionBehavior> ();
+        for (Action action : actions) {
+            behaviors.add(action.getBehavior());
+        }
+        return behaviors;
+    }
+
+    /**
+     * Determines if there are any active actions on the handler for this operation.  If not, the prefetch method need
+     * not run.
+     *
+     * @param handler The handler to check if isActive
+     * @param behaviorsOnHandler The list of relevant behaviors on the handler
+     *
+     * @return True if at least one behavior was found to be active on the handler; false if not.
+     */
+    public static Boolean shouldHandlerRun(Handler handler, List<ActionBehavior> behaviorsOnHandler) {
+        for (ActionBehavior behavior : behaviorsOnHandler) {
+            if (Activation.isActive(handler, behavior.uniqueName)) {
+                return true;
             }
         }
-
-        System.debug('Calling actions...');
-        for (Action action : actionsToAttempt) {
-            if (Activation.isActive(action)) {
-                Context reducedContext = getReducedContext(context, action);
-                if (context.hasIds && reducedContext == null) {
-                    System.debug('Action ' + action.getUniqueName() + ' has no unique ids on which to perform, so it is being skipped');
-                    continue;
-                }
-                System.debug('Running Action ' + action.getUniqueName());
-                Set<Id> completedIds = action.run(reducedContext, prefetchedData);
-                System.debug('End Running Action ' + action.getUniqueName());
-                // record ids has having been completed
-                if (context.hasIds && completedIds != null) {
-                    idHistoryMap.get(action.getUniqueName()).addAll(completedIds);
-                }
-            }
-        }
+        return false;
     }
 
-    private static Context getReducedContext(Context context, Action action) {
-        if (!context.hasIds) {
-            return context;
-        } else if (!idHistoryMap.containsKey(action.getUniqueName())) {
-            idHistoryMap.put(action.getUniqueName(), new Set<Id>());
-        }
-        return context.withRemovedIds(idHistoryMap.get(action.getUniqueName()));
-    }
-
-    global static void resetAllRecursionCounters() {
-        idHistoryMap = new Map<String, Set<Id>>();
-    }
-
+    /**
+     * Exception thrown if a call to run(Handler, Context) was made outside of testing, which is not allowed.
+     */
     global class InvalidOutsideOfTestingException extends Exception {}
-
-    global class OperationNotSupportedException extends Exception {}
 }

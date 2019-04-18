@@ -4,16 +4,16 @@
 public without sharing class TrigTestObjectAction implements Action {
 
     public static Map<String, Integer> timesRunMap = new Map<String, Integer>();
+    public static final String UNIQUE_NAME = 'Trig.TrigTestObject.TrigTestObjectAction';
 
-    public String getUniqueName() {
-        incrementMap('getUniqueName');
-        return 'Trig.TrigTestObject.TrigTestObjectAction';
+    public ActionBehavior getBehavior() {
+        return new ActionBehavior(this, UNIQUE_NAME).setById().setCallLimit(3);
     }
 
-    public Set<Id> run(Context context, Map<String, Object> prefetchedData) {
+    public RunResult run(Context context, PrefetchedData data) {
         incrementMap(context.operation.name());
         if (context.hasIds) {
-            return context.hasNew ? context.newMap.keySet() : context.oldMap.keySet();
+            return new RunResult(context.hasNew ? context.newMap.keySet() : context.oldMap.keySet());
         } else {
             return null;
         }

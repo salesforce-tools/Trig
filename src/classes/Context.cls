@@ -10,6 +10,17 @@ global without sharing class Context {
     global TriggerOperation operation {global get; private set;}
     global Integer size {global get; private set;}
 
+    /**
+     * Constructor to create an arbitrary context.  Client code uses the static methods below this one to ensure
+     * consistency.
+     *
+     * @param newList Trigger.new
+     * @param oldList Trigger.old
+     * @param newMap Trigger.newMap
+     * @param oldMap Trigger.oldMap
+     * @param operation Trigger.operationType
+     * @param size Trigger.size
+     */
     public Context(
             List<SObject> newList,
             List<SObject> oldList,
@@ -26,6 +37,12 @@ global without sharing class Context {
         this.size = size;
     }
 
+    /**
+     * Creates a Context from the current trigger information
+     *
+     * @return The Context that represents the current trigger info.
+     * @throws TriggerNotExecutingException if a trigger is not currently executing.
+     */
     public static Context fromTrigger() {
         if (!Trigger.isExecuting) {
             throw new TriggerNotExecutingException('Could not create context from trigger variables because a trigger is not executing.');
@@ -57,6 +74,17 @@ global without sharing class Context {
     }
 
     /**
+     * Creates a Context signifying a Before Insert trigger, typically used for testing.
+     *
+     * @param newSObject a single SObject that would be the contents of Trigger.new.
+     *
+     * @return Context signifying a Before Insert trigger with the new SObject.
+     */
+    global static Context beforeInsert(SObject newSObject) {
+        return beforeInsert(new List<SObject> {newSObject});
+    }
+
+    /**
      * Creates a Context signifying an After Insert trigger, typically used for testing.
      *
      * @param newMap A map equivalent to Trigger.newMap in an after insert trigger.
@@ -70,6 +98,17 @@ global without sharing class Context {
         return new Context(
                 newMap.values(), null, newMap, null, TriggerOperation.AFTER_INSERT, newMap.size()
         );
+    }
+
+    /**
+     * Creates a Context signifying an After Insert trigger, typically used for testing.
+     *
+     * @param newSObject a single SObject that would be the contents of Trigger.new.
+     *
+     * @return Context signifying an After Insert trigger with the new SObject.
+     */
+    global static Context afterInsert(SObject newSObject) {
+        return afterInsert(new Map<Id, SObject> {newSObject.Id => newSObject});
     }
 
     /**
@@ -90,6 +129,18 @@ global without sharing class Context {
     }
 
     /**
+     * Creates a Context signifying a Before Update trigger, typically used for testing.
+     *
+     * @param oldSObject The old SObject that would be in Trigger.old
+     * @param newSObject The new SObject that would be in Trigger.new
+     *
+     * @return Context signifying a Before Update trigger with the new and old SObjects.
+     */
+    global static Context beforeUpdate(SObject oldSObject, SObject newSObject) {
+        return beforeUpdate(new Map<Id, SObject> {oldSObject.Id => oldSObject}, new Map<Id, SObject> {newSObject.Id => newSObject});
+    }
+
+    /**
      * Creates a Context signifying an After Update trigger, typically used for testing.
      *
      * @param oldMap A map equivalent to Trigger.oldMap in an after update trigger.
@@ -104,6 +155,18 @@ global without sharing class Context {
         return new Context(
                 newMap.values(), oldMap.values(), newMap, oldMap, TriggerOperation.AFTER_UPDATE, newMap.size()
         );
+    }
+
+    /**
+     * Creates a Context signifying a After Update trigger, typically used for testing.
+     *
+     * @param oldSObject The old SObject that would be in Trigger.old
+     * @param newSObject The new SObject that would be in Trigger.new
+     *
+     * @return Context signifying a After Update trigger with the new and old SObjects.
+     */
+    global static Context afterUpdate(SObject oldSObject, SObject newSObject) {
+        return afterUpdate(new Map<Id, SObject> {oldSObject.Id => oldSObject}, new Map<Id, SObject> {newSObject.Id => newSObject});
     }
 
     /**
@@ -123,6 +186,17 @@ global without sharing class Context {
     }
 
     /**
+     * Creates a Context signifying a Before Delete trigger, typically used for testing.
+     *
+     * @param oldSObject a single SObject that would be the contents of Trigger.old.
+     *
+     * @return Context signifying an Before Delete trigger with the old SObject.
+     */
+    global static Context beforeDelete(SObject oldSObject) {
+        return beforeDelete(new Map<Id, SObject> {oldSObject.Id => oldSObject});
+    }
+
+    /**
      * Creates a Context signifying an After Delete trigger, typically used for testing.
      *
      * @param oldMap A map equivalent to Trigger.oldMap in an after delete trigger.
@@ -134,8 +208,19 @@ global without sharing class Context {
             throw new NullTriggerContextException('Cannot create Context from null SObject map');
         }
         return new Context(
-                null, oldMap.values(), null, oldMap, TriggerOperation.BEFORE_DELETE, oldMap.size()
+                null, oldMap.values(), null, oldMap, TriggerOperation.AFTER_DELETE, oldMap.size()
         );
+    }
+
+    /**
+     * Creates a Context signifying a After Delete trigger, typically used for testing.
+     *
+     * @param oldSObject a single SObject that would be the contents of Trigger.old.
+     *
+     * @return Context signifying an After Delete trigger with the old SObject.
+     */
+    global static Context afterDelete(SObject oldSObject) {
+        return afterDelete(new Map<Id, SObject> {oldSObject.Id => oldSObject});
     }
 
     /**
@@ -152,6 +237,17 @@ global without sharing class Context {
         return new Context(
                 newMap.values(), null, newMap, null, TriggerOperation.AFTER_UNDELETE, newMap.size()
         );
+    }
+
+    /**
+     * Creates a Context signifying a After Undelete trigger, typically used for testing.
+     *
+     * @param newSObject a single SObject that would be the contents of Trigger.new.
+     *
+     * @return Context signifying an After Undelete trigger with the new SObject.
+     */
+    global static Context afterUndelete(SObject newSObject) {
+        return afterUndelete(new Map<Id, SObject> {newSObject.Id => newSObject});
     }
 
     /**
@@ -250,9 +346,17 @@ global without sharing class Context {
     global SObjectType objectType {
         get {
             if (newList != null && !newList.isEmpty()) {
-                return newList[0].getSObjectType();
+                if (newList[0] != null) {
+                    return newList[0].getSObjectType();
+                } else {
+                    return null;
+                }
             } else if (oldList != null && !oldList.isEmpty()) {
-                return oldList[0].getSObjectType();
+                if (oldList[0] != null) {
+                    return oldList[0].getSObjectType();
+                } else {
+                    return null;
+                }
             } else {
                 return null;
             }
@@ -260,6 +364,13 @@ global without sharing class Context {
         private set;
     }
 
+    /**
+     * Generates the current context minus the given ids to remove.  Does not affect original Context. (no side effects)
+     *
+     * @param idsToRemove Set of Ids to not include in the resulting Context.
+     *
+     * @return Resulting context without given Ids.
+     */
     public Context withRemovedIds(Set<Id> idsToRemove) {
         Map<Id, SObject> adjustedNewMap = null;
         Map<Id, SObject> adjustedOldMap = null;
@@ -295,7 +406,12 @@ global without sharing class Context {
         );
     }
 
-    global String toSummaryString() {
+    /**
+     * A simple format to display basic info about this context used for debug logging.
+     *
+     * @return Basic string representation of the current context.
+     */
+    public String toSummaryString() {
         return 'Trig.Context:' + operation.name() + ' on ' + String.valueOf(objectType);
     }
 
