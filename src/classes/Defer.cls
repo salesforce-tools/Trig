@@ -1,7 +1,7 @@
 /**
  * @description Provides methods to perform DML at the end of an execution context (still synchronously)
  */
-global without sharing class Defer {
+global inherited sharing class Defer {
 
     public static Map<Id, SObject> toUpdate = new Map<Id, SObject> ();
 

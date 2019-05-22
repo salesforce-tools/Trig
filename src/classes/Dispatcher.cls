@@ -2,7 +2,7 @@
  * @description The class to call as a one-liner for Triggers.  The primary class that controls execution of handlers
  *  and actions.
  */
-global without sharing class Dispatcher {
+global inherited sharing class Dispatcher {
 
     private static Integer callDepth = 0;
 

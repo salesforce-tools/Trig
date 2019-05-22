@@ -2,7 +2,7 @@
  * Created by derekwiers on 2019-03-19.
  */
 
-global without sharing class Activation {
+global inherited sharing class Activation {
 
     @TestVisible
     private static ActivationState state = Test.isRunningTest() ?

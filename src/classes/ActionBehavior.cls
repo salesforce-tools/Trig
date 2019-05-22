@@ -2,7 +2,7 @@
  * Created by derekwiers on 2019-04-15.
  */
 
-global without sharing class ActionBehavior {
+global inherited sharing class ActionBehavior {
 
     public Boolean byId = false;
     public Integer callLimit = null;

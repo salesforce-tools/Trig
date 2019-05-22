@@ -1,7 +1,7 @@
 /**
  * Created by derekwiers on 2019-03-19.
  */
-public without sharing class TrigTestObjectHandler extends Handler {
+public inherited sharing class TrigTestObjectHandler extends Handler {
 
     public static Boolean prefetchCalled = false;
 

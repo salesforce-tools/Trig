@@ -2,7 +2,7 @@
  * Created by derekwiers on 2019-04-13.
  */
 
-global without sharing class InactiveState implements ActivationState {
+global inherited sharing class InactiveState implements ActivationState {
 
     private Set<String> inactiveActions = new Set<String> ();
     private Set<SObjectType> activeHandlers = new Set<SObjectType> ();

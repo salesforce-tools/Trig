@@ -1,7 +1,7 @@
 /**
  * Created by derekwiers on 2019-03-19.
  */
-public without sharing class TrigTestObjectAction implements Action {
+public inherited sharing class TrigTestObjectAction implements Action {
 
     public static Map<String, Integer> timesRunMap = new Map<String, Integer>();
     public static final String UNIQUE_NAME = 'Trig.TrigTestObject.TrigTestObjectAction';

@@ -2,7 +2,7 @@
  * Created by derekwiers on 2019-04-12.
  */
 
-global without sharing class AntiRecursion {
+global inherited sharing class AntiRecursion {
 
     public static Map<String, Set<Id>> idHistoryMap = new Map<String, Set<Id>> ();
 

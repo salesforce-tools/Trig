@@ -1,7 +1,7 @@
 /**
  * @description Represents the Trigger Context variables for a trigger operation.
  */
-global without sharing class Context {
+global inherited sharing class Context {
 
     global List<SObject> newList {global get; private set;}
     global List<SObject> oldList {global get; private set;}

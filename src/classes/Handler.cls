@@ -1,7 +1,7 @@
 /**
  * @description
  */
-global abstract without sharing class Handler {
+global abstract inherited sharing class Handler {
 
     global abstract SObjectType handledSObjectType ();
 
